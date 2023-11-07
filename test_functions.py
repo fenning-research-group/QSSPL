@@ -6,6 +6,54 @@ import os
 from tqdm import tqdm
 %matplotlib
 
+
+# this is the one jack sent
+
+currents = 294.3+np.logspace(np.log10(300-294.3), np.log10(700-294.3), 41)
+for curr in currents:
+    data = pd.DataFrame()
+    v_set, I_set = current_mod(curr)
+    plqy.lia.sine_voltage = v_set
+    plqy.ldc.set_laserCurrent(I_set)
+    if curr < 350:
+        sleep_factor = 1
+        plqy.lia.time_constant = 1
+    else:
+        sleep_factor = 0.1
+        plqy.lia.time_constant = 0.1
+    for freq in np.linspace(1e4, 8e4, 15):
+        plqy.lia.frequency = freq
+        plqy.filterslider.right() #PL signal
+        sleep(sleep_factor*10)
+        plqy.lia.quick_range()
+        temp = []
+        sleep(sleep_factor*2)
+        for i in tqdm(range(10)):
+            temp.append(plqy.lia.get_theta())
+            sleep(sleep_factor)
+        data[f'PL_{freq}'] = temp
+
+        plqy.filterslider.left() #PL signal
+        sleep(sleep_factor*10)
+        plqy.lia.quick_range()
+        temp = []
+        sleep(sleep_factor*2)
+        for i in tqdm(range(10)):
+            temp.append(plqy.lia.get_theta())
+            sleep(sleep_factor)
+        data[f'Laser_{freq}'] = temp
+        data[f'Diff_{freq}'] = np.abs(data[f'Laser_{freq}'] -  data[f'PL_{freq}'])
+        print(f'Difference: {np.mean(data[f"Diff_{freq}"])}+-{np.std(data[f"Diff_{freq}"])}')
+
+    plqy.lia.frequency = 1e4
+    data.to_csv(f'TR_{freq}_{curr:0.2f}.csv', index = False)
+    plt.plot(np.linspace(1e4, 8e4, 15), data[[c for c in data.columns if 'Diff' in c]].mean())
+    plt.show()
+
+
+
+# other ones:
+
 currents = np.linspace(300, 700, 41)[::-1]
 for curr in tqdm(currents):
     fig, ax = plt.subplots(1,1)
@@ -181,46 +229,6 @@ for v in vs:
 
 
 
-currents = 294.3+np.logspace(np.log10(300-294.3), np.log10(700-294.3), 41)
-for curr in currents:
-    data = pd.DataFrame()
-    v_set, I_set = current_mod(curr)
-    plqy.lia.sine_voltage = v_set
-    plqy.ldc.set_laserCurrent(I_set)
-    if curr < 350:
-        sleep_factor = 1
-        plqy.lia.time_constant = 1
-    else:
-        sleep_factor = 0.1
-        plqy.lia.time_constant = 0.1
-    for freq in np.linspace(1e4, 8e4, 15):
-        plqy.lia.frequency = freq
-        plqy.filterslider.right() #PL signal
-        sleep(sleep_factor*10)
-        plqy.lia.quick_range()
-        temp = []
-        sleep(sleep_factor*2)
-        for i in tqdm(range(10)):
-            temp.append(plqy.lia.get_theta())
-            sleep(sleep_factor)
-        data[f'PL_{freq}'] = temp
-
-        plqy.filterslider.left() #PL signal
-        sleep(sleep_factor*10)
-        plqy.lia.quick_range()
-        temp = []
-        sleep(sleep_factor*2)
-        for i in tqdm(range(10)):
-            temp.append(plqy.lia.get_theta())
-            sleep(sleep_factor)
-        data[f'Laser_{freq}'] = temp
-        data[f'Diff_{freq}'] = np.abs(data[f'Laser_{freq}'] -  data[f'PL_{freq}'])
-        print(f'Difference: {np.mean(data[f"Diff_{freq}"])}+-{np.std(data[f"Diff_{freq}"])}')
-
-    plqy.lia.frequency = 1e4
-    data.to_csv(f'TR_{freq}_{curr:0.2f}.csv', index = False)
-    plt.plot(np.linspace(1e4, 8e4, 15), data[[c for c in data.columns if 'Diff' in c]].mean())
-    plt.show()
 
 
 
