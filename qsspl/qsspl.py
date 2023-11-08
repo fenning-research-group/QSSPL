@@ -142,7 +142,7 @@ class QSSPL:
 
             # Save the data
             self.lia.frequency = 1e4
-            data.to_csv(f'TR_{freq}_{curr:0.2f}.csv', index = False)
+            data.to_csv(f'{sample_name}_TR_{freq}_{curr:0.2f}.csv', index = False)
             plt.plot(np.linspace(1e4, 8e4, 15), data[[c for c in data.columns if 'Diff' in c]].mean())
             plt.show()
 
