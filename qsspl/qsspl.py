@@ -36,11 +36,11 @@ class QSSPL:
             self.ldc = LDC502("COM24")
             self.laser_current = self.ldc.get_laser_current()
             self.laser_temp = self.ldc.get_laser_temp()
-            self.laser_wl = 532
+            self.laser_wl = 532 #nm
             self.ldc.set_laserOn()
             self.ldc.set_tecOn()
             self.ldc.set_modulationOff()
-            self.ldc.set_laserCurrent(400)
+            self.ldc.set_laserCurrent(380)
             print("Laser connected and set to safe level to set up device testing.")
         except Exception as e:  
             print("Error while trying to connect to the Laser: ", e)
@@ -61,10 +61,11 @@ class QSSPL:
     def _configure(self, n_wires = 2):
         self.ldc.set_laserOn()
         self.ldc.set_tecOn()
-        self.ldc.set_modulationON()
+        self.ldc.set_modulationOn()
         print("Laser, TEC, and modulation turned on.")
 
 
+    # Method to take QSSPL measurements- function dev in progress
     def take_qsspl(self, sample_name = "sample", min_current = 300, max_current = 800, step = 20, num_measurements = 5)
         print('\nSetting Laser Current and waiting to stabilize...')
         print('\This is a test function')
