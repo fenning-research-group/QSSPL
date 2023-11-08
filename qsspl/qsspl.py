@@ -21,6 +21,8 @@ except ImportError:
 
 plus_minus = u"\u00B1"
 
+# Version 1.0
+
 class QSSPL:
     ''' A class to take Quasi-steady-state photoluminescence measurements '''
 
