@@ -66,7 +66,7 @@ class QSSPL:
 
 
     # Method to take QSSPL measurements- function dev in progress
-    def take_qsspl(self, sample_name = "sample", min_current = 300, max_current = 800, step = 20, num_measurements = 5)
+    def take_qsspl(self, sample_name = "sample", min_current = 300, max_current = 800, step = 20, num_measurements = 5):
         print('\nSetting Laser Current and waiting to stabilize...')
         print('\This is a test function')
         data = {}
