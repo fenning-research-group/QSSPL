@@ -6,7 +6,7 @@ import os
 from tqdm import tqdm
 from time import sleep
 
-# Version 1.3 - function dev
+# Version 1.3.1 - function dev
 
 # Import local modules for hardware control
 
@@ -58,10 +58,11 @@ class QSSPL:
             print("Lock-in SR850 connected.")
         except Exception as e:
             print("Error while trying to connect to the SR850: ", e)
-            print("Please ensure the Keithley is connected to 'GPIB1::22::INSTR' and try again.")
+            print("Please ensure the Lock-in is connected to 'GPIBX::XX::INSTR' and try again.")
             raise self.CustomError("Lock-in Connection Error")
         
         # Connect to the Filter Slider
+        try:
             self.filter = FilterSlider()
             print("Filter slider connected.")
         except Exception as e:
@@ -94,7 +95,8 @@ class QSSPL:
         self._configure()
 
         # Set up the data frame
-        currents = 294.3+np.logspace(np.log10(300-294.3), np.log10(700-294.3), 41)
+        #currents = 294.3+np.logspace(np.log10(300-294.3), np.log10(700-294.3), 41)
+        currents = np.arange(400, 500, 20)
         # change currents to arguments
 
         for curr in currents:
@@ -124,19 +126,22 @@ class QSSPL:
                 for i in tqdm(range(10)):
                     temp.append(self.lia.get_theta()) # Get phase shift
                     sleep(sleep_factor)
+                data[f'PL_{freq}'] = temp    
+                print("Longpass in (PL) phase shift collected")    
 
                 # Measure laser signal
                 self.filter.left() # Longpass out
                 sleep(10*sleep_factor)
                 self.lia.quick_range()
-                temp2 = []
+                temp = []
                 sleep(2*sleep_factor)
                 for i in tqdm(range(10)):
-                    temp2.append(self.lia.get_theta())
+                    temp.append(self.lia.get_theta()) # Get phase shift
                     sleep(sleep_factor)
+                data[f'Laser_{freq}'] = temp    
+                print("Longpass out (laser) phase shift collected")    
                 
                 #Store the data
-                data[f'Laser_{freq}'] = temp
                 data[f'Diff_{freq}'] = np.abs(data[f'Laser_{freq}'] -  data[f'PL_{freq}'])
                 print(f'Difference: {np.mean(data[f"Diff_{freq}"])}+-{np.std(data[f"Diff_{freq}"])}')
 
