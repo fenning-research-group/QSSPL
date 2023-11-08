@@ -6,7 +6,7 @@ import os
 from tqdm import tqdm
 from time import sleep
 
-# Version 1.3.1 - function dev
+# Version 1.4.1 - improve function
 
 # Import local modules for hardware control
 
