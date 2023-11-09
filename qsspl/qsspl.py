@@ -6,7 +6,7 @@ import os
 from tqdm import tqdm
 from time import sleep
 
-# Version 1.5 - working function
+# Version 1.6 - working function
 
 # Import local modules for hardware control
 
@@ -75,70 +75,72 @@ class QSSPL:
         ''' Method to modulate the current of the laser '''
         turn_on = 295.5
         diff = max_current  - turn_on
-        voltage = (2**-0.5)*(diff*0.5)/1000
+        voltage = (2**-0.5)*(diff*0.05)/100
         return voltage, max_current
 
     # Method to configure the hardware
     def _configure(self):
+        ''' Method to configure the laser settings'''
         self.ldc.set_laserOn()
         self.ldc.set_tecOn()
         self.ldc.set_modulationOn()
         print("Laser, TEC, and modulation turned on.")
 
+    def _turn_off(self):
+        ''' Method to turn off laser '''
+        self.ldc.set_laserOff()
+        self.ldc.set_tecOff()
+        self.ldc.set_modulationOff()
+        print("Laser, TEC, and modulation turned off.")
+
 
     # Method to take QSSPL measurements- function dev in progress
-    def take_qsspl(self, sample_name = "sample", min_current = 320, max_current = 780, step = 20):
-        print('This is a test function')
+    def take_qsspl(self, sample_name = "sample", min_current = 320, max_current = 780, step = 20, time_constant = 0.1):
+        print('Begin scan')
 
         # Configure the hardware
         self._configure()
 
-        # Set up the data frame
+        # change currents to logspace or linspace
         # currents = 294.3+np.logspace(np.log10(300-294.3), np.log10(750-294.3), 21)
         currents = np.arange(min_current, max_current+step, step)
-        # change currents to logspace or linspace
 
         for curr in currents:
             data = pd.DataFrame()
             v_set, I_set = self._current_mod(curr)
             self.lia.sine_voltage = v_set
             self.ldc.set_laserCurrent(I_set)
-
-            # Adjust delays based on current
-            if curr < 350:
-                sleep_factor = 0.1
-                self.lia.time_constant = 0.1
-            else:
-                sleep_factor = 0.1
-                self.lia.time_constant = 0.1
+            print(f'Current set to {I_set}')
+            self.lia.time_constant = time_constant
+            rest = self.lia.time_constant
 
             # Sweep frequency and take measurements
             for freq in np.linspace(1e4, 8e4, 15):
                 self.lia.frequency = freq
 
                 # Measure PL signal
-                self.filter.right() # Longpass in
-                sleep(10*sleep_factor)
+                self.filter.right() # Longpass in - PL
+                sleep(10*rest)
                 self.lia.quick_range()
                 temp = []
-                sleep(2*sleep_factor)
+                sleep(2*rest)
                 for i in tqdm(range(10)):
                     temp.append(self.lia.get_theta()) # Get phase shift
-                    sleep(sleep_factor)
+                    sleep(rest)
                 data[f'PL_{freq}'] = temp    
-                print("Longpass in (PL) phase shift collected")    
+                print(f"Longpass in (PL) phase shift collected at {freq} Hz")    
 
                 # Measure laser signal
-                self.filter.left() # Longpass out
-                sleep(10*sleep_factor)
+                self.filter.left() # Longpass out - Laser
+                sleep(10*rest)
                 self.lia.quick_range()
                 temp = []
-                sleep(2*sleep_factor)
+                sleep(2*rest)
                 for i in tqdm(range(10)):
                     temp.append(self.lia.get_theta()) # Get phase shift
-                    sleep(sleep_factor)
+                    sleep(rest)
                 data[f'Laser_{freq}'] = temp    
-                print("Longpass out (laser) phase shift collected")    
+                print(f"Longpass out (laser) phase shift collected at {freq} Hz")    
                 
                 # Store the data
                 data[f'Diff_{freq}'] = np.abs(data[f'Laser_{freq}'] -  data[f'PL_{freq}'])
@@ -146,10 +148,10 @@ class QSSPL:
 
             # Save the data
             data.to_csv(f'{sample_name}_TR_{curr:0.2f}.csv', index = False)
-            # plt.plot(np.linspace(1e4, 8e4, 15), data[[c for c in data.columns if 'Diff' in c]].mean())
-            # plt.xlabel("Frequency Hz")
-            # plt.ylabel("Phase shift (degrees)")
-            # plt.show()
+
+        # Power down
+        self._turn_off()
+
 
 
 
