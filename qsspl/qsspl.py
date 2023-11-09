@@ -88,7 +88,7 @@ class QSSPL:
 
 
     # Method to take QSSPL measurements- function dev in progress
-    def take_qsspl(self, sample_name = "sample"):
+    def take_qsspl(self, sample_name = "sample", min_current = 320, max_current = 780, step = 20):
         print('This is a test function')
 
         # Configure the hardware
@@ -96,8 +96,8 @@ class QSSPL:
 
         # Set up the data frame
         #currents = 294.3+np.logspace(np.log10(300-294.3), np.log10(700-294.3), 41)
-        currents = np.arange(400, 500, 20)
-        # change currents to arguments
+        currents = np.arange(min_current, max_current+step, step)
+        # change currents to logspace or linspace
 
         for curr in currents:
             data = pd.DataFrame()
@@ -141,14 +141,15 @@ class QSSPL:
                 data[f'Laser_{freq}'] = temp    
                 print("Longpass out (laser) phase shift collected")    
                 
-                #Store the data
+                # Store the data
                 data[f'Diff_{freq}'] = np.abs(data[f'Laser_{freq}'] -  data[f'PL_{freq}'])
                 print(f'Difference: {np.mean(data[f"Diff_{freq}"])}+-{np.std(data[f"Diff_{freq}"])}')
 
             # Save the data
-            self.lia.frequency = 1e4
-            data.to_csv(f'{sample_name}_TR_{freq}_{curr:0.2f}.csv', index = False)
+            data.to_csv(f'{sample_name}_TR_{curr:0.2f}.csv', index = False)
             plt.plot(np.linspace(1e4, 8e4, 15), data[[c for c in data.columns if 'Diff' in c]].mean())
+            plt.xlabel("Frequency Hz")
+            plt.ylabel("Phase shift (degrees)")
             plt.show()
 
 
