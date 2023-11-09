@@ -1,0 +1,10 @@
+README.md
+setup.py
+qsspl/__init__.py
+qsspl/fy2300.py
+qsspl/qsspl.py
+qsspl/test_functions.py
+qsspl.egg-info/PKG-INFO
+qsspl.egg-info/SOURCES.txt
+qsspl.egg-info/dependency_links.txt
+qsspl.egg-info/top_level.txt

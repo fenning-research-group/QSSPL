@@ -1,10 +1,101 @@
+import time
+import io
+import serial
+import sys
 
-import fygen
-fy = fygen.FYGen('/dev/ttyUSB0', debug_level=1)
-fy = fygen.FYGen(debug_level=1)  # Same thing
 
-# In case you get UnsupportedDeviceError, you can manually specify
-# one of the supported devices that may be compatible.
-# The id's of waveforms are different between models,
-# so you might not get the waveform you ask for
-fy = fygen.FyGen(device_name='fy2300')
+class fy2300:
+    """This class is used to control the FeelTech FY2300 signal generator"""
+
+    def __init__(self, port, baudrate=9600, timeout=0.5, bytesize=8):
+        """
+        Args:
+            port (str): usually a COM port
+            baudrate (int): Should usually be 9600
+            timeout (float, optional): Serial timeout. Defaults to 0.5.
+            bytesize (int, optional): How big the bytes are. Defaults to 8.
+        """
+        self.port = port
+        self.baudrate = baudrate
+        self.timeout = timeout
+        self.bytesize = bytesize
+
+        self.connect()
+        self.initiate_coms()
+        self.channels = {1: "WM", 2: "WF"}
+        self.waves = {"sine": 0, "square": 1, "half_wave": 18}
+
+    def connect(self):
+        """Connect to the instument"""
+        try:
+            self.serial = serial.Serial(
+                self.port,
+                baudrate=self.baudrate,
+                timeout=self.timeout,
+                bytesize=self.bytesize,
+            )
+        except:
+            sys.stdout.write("Could not connect to FY2300, try again")
+
+    def initiate_coms(self):
+        self.sio = io.TextIOWrapper(
+            io.BufferedRWPair(self.serial, self.serial, 1), newline=None
+        )
+        self.sio._CHUNK_SIZE = 1
+
+    def write_and_read(self, message):
+        self.sio.write(f"{message}\n")
+        self.sio.flush()
+        response = self.sio.readline()
+        return response
+
+    def get_device_name(self):
+        id = self.write_and_read("UMO")
+        return id.strip()
+
+    def set_amplitude(self, channel, v):
+        """Set the amplitude of the signal generator
+
+        Args:
+            channel (int): 1 or 2
+            v (float): amplitude in volts
+        """
+
+        message = f"{self.channels[channel]}A{float(v)}"
+        self.write_and_read(message)
+
+    def set_output_on(self, channel):
+        """Turn on the output of the signal generator
+
+        Args:
+            channel (int): 1 or 2
+        """
+        message = f"{self.channels[channel]}N1"
+        self.write_and_read(message)
+
+    def set_output_off(self, channel):
+        """Turn off the output of the signal generator
+
+        Args:
+            channel (int): 1 or 2"""
+
+        message = f"{self.channels[channel]}N0"
+        self.write_and_read(message)
+
+    def set_waveform(self, channel, waveform, freq, duty=50):
+        """Set the waveform of the signal generator
+
+        Args:
+            channel (int): 1 or 2
+            waveform (str): "sine", "square", "half_wave"
+            freq (float): frequency in Hz
+            duty (float, optional): duty cycle in %. Defaults to 50.
+        """
+        message = f"{self.channels[channel]}W{self.waves[waveform]}"
+        self.write_and_read(message)
+        # time.sleep(0.05)
+        message = f"{self.channels[channel]}F{freq*1000000:0.0f}"
+        self.write_and_read(message)
+        # time.sleep(0.05)
+        message = f"{self.channels[channel]}D{duty:0.0f}"
+        self.write_and_read(message)
