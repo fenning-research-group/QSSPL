@@ -6,7 +6,7 @@ import os
 from tqdm import tqdm
 from time import sleep
 
-# Version 1.4.1 - improve function
+# Version 1.5 - working function
 
 # Import local modules for hardware control
 
@@ -74,10 +74,9 @@ class QSSPL:
     def _current_mod(self, max_current):
         ''' Method to modulate the current of the laser '''
         turn_on = 295.5
-        diff = max_current-turn_on
-        setpoint = 0.5*(turn_on+max_current)
-        voltage = (2**-0.5)*(diff*0.5)/100
-        return voltage, setpoint
+        diff = max_current  - turn_on
+        voltage = (2**-0.5)*(diff*0.5)/1000
+        return voltage, max_current
 
     # Method to configure the hardware
     def _configure(self):
@@ -95,7 +94,7 @@ class QSSPL:
         self._configure()
 
         # Set up the data frame
-        #currents = 294.3+np.logspace(np.log10(300-294.3), np.log10(700-294.3), 41)
+        # currents = 294.3+np.logspace(np.log10(300-294.3), np.log10(750-294.3), 21)
         currents = np.arange(min_current, max_current+step, step)
         # change currents to logspace or linspace
 
@@ -107,8 +106,8 @@ class QSSPL:
 
             # Adjust delays based on current
             if curr < 350:
-                sleep_factor = 1
-                self.lia.time_constant = 1
+                sleep_factor = 0.1
+                self.lia.time_constant = 0.1
             else:
                 sleep_factor = 0.1
                 self.lia.time_constant = 0.1
@@ -147,10 +146,10 @@ class QSSPL:
 
             # Save the data
             data.to_csv(f'{sample_name}_TR_{curr:0.2f}.csv', index = False)
-            plt.plot(np.linspace(1e4, 8e4, 15), data[[c for c in data.columns if 'Diff' in c]].mean())
-            plt.xlabel("Frequency Hz")
-            plt.ylabel("Phase shift (degrees)")
-            plt.show()
+            # plt.plot(np.linspace(1e4, 8e4, 15), data[[c for c in data.columns if 'Diff' in c]].mean())
+            # plt.xlabel("Frequency Hz")
+            # plt.ylabel("Phase shift (degrees)")
+            # plt.show()
 
 
 
