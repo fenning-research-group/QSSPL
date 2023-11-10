@@ -6,7 +6,7 @@ import os
 from tqdm import tqdm
 from time import sleep
 
-# Version 1.7 - working function
+# Version 1.8 - fygen updates
 
 # Import local modules for hardware control
 
