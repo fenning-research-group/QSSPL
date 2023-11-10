@@ -6,7 +6,7 @@ import os
 from tqdm import tqdm
 from time import sleep
 
-# Version 1.6 - working function
+# Version 1.7 - working function
 
 # Import local modules for hardware control
 
@@ -24,6 +24,11 @@ try:
     from PLQY.ell6_slider import FilterSlider
 except ImportError:
     raise ImportError("Failed to import FilterSlider from PLQY.ell6_slider. Ensure the module is installed and accessible.")
+
+try:
+    from fy2300 import fy2300
+except ImportError:
+    raise ImportError("Failed to import fy2300. Ensure the module is installed and accessible.")
 
 plus_minus = u"\u00B1"
 
@@ -70,6 +75,14 @@ class QSSPL:
             print("Please ensure the Filter Slider is connected and try again.")
             raise self.CustomError("Filter Slider Connection Error")    
         
+        try: 
+            self.fy = fy2300("COM3")
+            print("FY2300 connected.")
+        except Exception as e:
+            print("Error while trying to connect to the FY2300: ", e)
+            print("Please ensure the FY2300 is connected and try again.")
+            raise self.CustomError("FY2300 Connection Error")
+        
     # Method to set the laser current modulation
     def _current_mod(self, max_current):
         ''' Method to modulate the current of the laser '''
@@ -86,6 +99,7 @@ class QSSPL:
         self.ldc.set_modulationOn()
         print("Laser, TEC, and modulation turned on.")
 
+    # Method to turn off the laser
     def _turn_off(self):
         ''' Method to turn off laser '''
         self.ldc.set_laserOff()
@@ -93,9 +107,17 @@ class QSSPL:
         self.ldc.set_modulationOff()
         print("Laser, TEC, and modulation turned off.")
 
-
     # Method to take QSSPL measurements- function dev in progress
     def take_qsspl(self, sample_name = "sample", min_current = 320, max_current = 780, step = 20, time_constant = 0.1):
+        """ Method to take QSSPL measurements
+
+        Args:
+            sample_name (str, optional): Name of sample. Defaults to "sample".
+            min_current (int, optional): Minimum laser current (mA). Defaults to 320.
+            max_current (int, optional): Maximum laser current (mA). Defaults to 780.
+            step (int, optional): Step between current settings (mA). Defaults to 20.
+            time_constant (float, optional): Time constant for lock-in (s). Defaults to 0.1.
+        """        
         print('Begin scan')
 
         # Configure the hardware
