@@ -115,9 +115,11 @@ class QSSPL:
         self.ldc.set_modulationOff()
         print("Laser, TEC, and modulation turned off.")
 
-    def _generate_currents(self, start, stop, step):
-        currents = np.logspace(np.log10(start-self.turn_on), np.log10(stop-self.turn_on), 21)
-        return currents+295.5
+    def _generate_currents(self, start, stop):
+        turn_on = self.turn_on
+        currents = np.logspace(np.log10(start-turn_on), np.log10(stop-turn_on), 21)
+        currents = currents + turn_on
+        return currents
 
     # Method to take QSSPL measurements- function dev in progress
     def take_qsspl(self, sample_name = "sample", min_current = 300, max_current = 780, step = 20, waveform = "square", rest = 0.1):
