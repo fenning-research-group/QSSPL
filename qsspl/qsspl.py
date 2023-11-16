@@ -121,8 +121,9 @@ class QSSPL:
         currents = currents + turn_on
         return currents
 
+
     # Method to take QSSPL measurements- function dev in progress
-    def take_qsspl(self, sample_name = "sample", min_current = 300, max_current = 780, step = 20, waveform = "square", rest = 0.1):
+    def take_qsspl(self, sample_name = "sample", min_current = 300, max_current = 780, waveform = "square", rest = 0.1):
         """ Method to take QSSPL measurements
 
         Args:
@@ -143,7 +144,7 @@ class QSSPL:
         # change currents to logspace or linspace
         # currents = 294.3+np.logspace(np.log10(300-294.3), np.log10(750-294.3), 21)
         # currents = np.logspace(np.log10(min_current - self.turn_on, ))
-        currents = self._generate_currents(min_current, max_current, step) # log space
+        currents = self._generate_currents(min_current, max_current) # log space
         # currents = np.arange(min_current, max_current+step, step) # lin space
 
         for curr in currents:
@@ -195,6 +196,13 @@ class QSSPL:
 
         # Power down
         self._turn_off()
+
+
+
+            # Method to test hardware
+    def test(self, sample_name = "test_1", min_current = 550, max_current = 600, waveform = "square", rest = 0.1):
+        self.take_qsspl(sample_name, min_current, max_current, waveform, rest)
+        
 
 
 
