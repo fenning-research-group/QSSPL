@@ -26,7 +26,7 @@ except ImportError:
     raise ImportError("Failed to import FilterSlider from PLQY.ell6_slider. Ensure the module is installed and accessible.")
 
 try:
-    from fy2300 import fy2300
+    from QSSPL.FY2300 import fy2300
 except ImportError:
     raise ImportError("Failed to import fy2300. Ensure the module is installed and accessible.")
 
@@ -76,7 +76,7 @@ class QSSPL:
             raise self.CustomError("Filter Slider Connection Error")    
         
         try: 
-            self.fy = fy2300("COM3")
+            self.fy = fy2300("COM5")
             print("FY2300 connected.")
         except Exception as e:
             print("Error while trying to connect to the FY2300: ", e)
