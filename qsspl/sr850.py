@@ -31,7 +31,7 @@ import time
 import re
 
 
-class SR850(Instrument):
+class SR830(Instrument):
 
     SAMPLE_FREQUENCIES = [
         62.5e-3, 125e-3, 250e-3, 500e-3, 1, 2, 4, 8, 16,
@@ -270,7 +270,7 @@ class SR850(Instrument):
         "OAUX?3;",
         """ Reads the Aux input 3 value in Volts with 1/3 mV resolution. """
     )
-    # For consistency with other lock-in instrument classes
+        # For consistency with other lock-in instrument classes
     adc3 = aux_in_3
 
     aux_in_4 = Instrument.measurement(
@@ -289,6 +289,7 @@ class SR850(Instrument):
 
     def auto_gain(self):
         self.write("AGAN")
+        time.sleep(0.5) #added this Henrya
 
     def auto_reserve(self):
         self.write("ARSV")

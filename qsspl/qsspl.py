@@ -21,7 +21,7 @@ except ImportError:
     raise ImportError("Failed to import FilterSlider from PLQY.ell6_slider. Ensure the module is installed and accessible.")
 
 try:
-    from QSSPL.sr850 import SR850
+    from QSSPL.sr850 import SR830
 except ImportError:
     raise ImportError("Failed to import sr850 from QSSPL.sr850. Ensure the module is installed and accessible.")
 
@@ -60,7 +60,7 @@ class QSSPL:
 
        # Connect to the Lock-in
         try:
-            self.lia = SR830('GPIB1::7::INSTR')
+            self.lia = SR830('GPIB1::8::INSTR')
             print("Lock-in SR850 connected.")
         except Exception as e:
             print("Error while trying to connect to the SR850: ", e)
@@ -103,7 +103,8 @@ class QSSPL:
     def _configure_fy(self):
         self.fy.set_output_on(1)
         self.fy.set_output_on(2)
-        self.fy.set_amplitude(2, 1) # when using fy2300
+        self.fy.set_amplitude(2, 1)
+
         print("FY2300 channel 1 and 2 turned on, channel 2 amplitude set to 1 V")
 
     # Method to turn off the laser
@@ -119,7 +120,7 @@ class QSSPL:
         return currents+295.5
 
     # Method to take QSSPL measurements- function dev in progress
-    def take_qsspl(self, sample_name = "sample", min_current = 300, max_current = 780, step = 20, waveform = "sine", rest = 0.1):
+    def take_qsspl(self, sample_name = "sample", min_current = 300, max_current = 780, step = 20, waveform = "square", rest = 0.1):
         """ Method to take QSSPL measurements
 
         Args:
@@ -150,19 +151,18 @@ class QSSPL:
             self.fy.set_amplitude(1, v_set) # when using fy2300
             self.ldc.set_laserCurrent(I_set)
             print(f'Current set to {I_set}')
-
-            rest = self.rest
             
             # Sweep frequency and take measurements
             for freq in np.linspace(1e4, 8e4, 15):
                 #self.lia.frequency = freq # when using lock in
                 self.fy.set_waveform(1, waveform, freq) # when using fy2300
-                self.fy.set_waveform(2, waveform, freq) # when using fy2300
+                self.fy.set_waveform(2, "sine", freq) # when using fy2300
 
                 # Measure PL signal
                 self.filter.right() # Longpass in - PL
                 sleep(10*rest)
-                self.lia.quick_range()
+                #self.lia.quick_range()
+                self.lia.auto_gain()
                 temp = []
                 sleep(2*rest)
                 for i in tqdm(range(10)):
@@ -174,7 +174,8 @@ class QSSPL:
                 # Measure laser signal
                 self.filter.left() # Longpass out - Laser
                 sleep(10*rest)
-                self.lia.quick_range()
+                #self.lia.quick_range()
+                self.lia.auto_gain()
                 temp = []
                 sleep(2*rest)
                 for i in tqdm(range(10)):
