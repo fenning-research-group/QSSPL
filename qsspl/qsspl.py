@@ -200,12 +200,77 @@ class QSSPL:
 
 
             # Method to test hardware
-    def test(self, sample_name = "test_1", min_current = 550, max_current = 600, waveform = "square", rest = 0.1):
-        self.take_qsspl(sample_name, min_current, max_current, waveform, rest)
+    # Method to take QSSPL measurements- function dev in progress
+    def test_qsspl(self, sample_name = "test_1", min_current = 550, max_current = 650, waveform = "square", rest = 0.1):
+        """ Method to take QSSPL measurements
+
+        Args:
+            sample_name (str, optional): Name of sample. Defaults to "sample".
+            min_current (int, optional): Minimum laser current (mA). Defaults to 320.
+            max_current (int, optional): Maximum laser current (mA). Defaults to 780.
+            step (int, optional): Step between current settings (mA). Defaults to 20.
+            waveform (str, optional): Shape of waveform.  Defaults to "sine".
+            rest(float, optional): Time delay between measurements (s).  Defaults to 0.1 s. 
+        """        
+
+        # Configure the hardware
+        self._configure_ldc()
+        self._configure_fy()
+
+        print('Begin test scan')
         
 
+        currents = [min_current, max_current] 
 
+        for curr in currents:
+            data = pd.DataFrame()
+            v_set, I_set = self._current_mod(curr)
+            #self.lia.sine_voltage = v_set  # when using lock in
+            self.fy.set_amplitude(1, v_set) # when using fy2300
+            self.ldc.set_laserCurrent(I_set)
+            print(f'Current set to {I_set}')
+            
+            # Sweep frequency and take measurements
+            for freq in np.linspace(1e4, 8e4, 15):
+                #self.lia.frequency = freq # when using lock in
+                self.fy.set_waveform(1, waveform, freq) # when using fy2300
+                self.fy.set_waveform(2, "sine", freq) # when using fy2300
 
+                # Measure PL signal
+                self.filter.right() # Longpass in - PL
+                sleep(10*rest)
+                #self.lia.quick_range()
+                self.lia.auto_gain()
+                temp = []
+                sleep(2*rest)
+                for i in tqdm(range(10)):
+                    temp.append(self.lia.get_theta()) # Get phase shift
+                    sleep(rest)
+                data[f'PL_{freq}'] = temp    
+                print(f"Longpass in (PL) phase shift collected at {freq} Hz")    
+
+                # Measure laser signal
+                self.filter.left() # Longpass out - Laser
+                sleep(10*rest)
+                #self.lia.quick_range()
+                self.lia.auto_gain()
+                temp = []
+                sleep(2*rest)
+                for i in tqdm(range(10)):
+                    temp.append(self.lia.get_theta()) # Get phase shift
+                    sleep(rest)
+                data[f'Laser_{freq}'] = temp    
+                print(f"Longpass out (laser) phase shift collected at {freq} Hz")    
+                
+                # Store the data
+                data[f'Diff_{freq}'] = np.abs(data[f'Laser_{freq}'] -  data[f'PL_{freq}'])
+                print(f'Difference: {np.mean(data[f"Diff_{freq}"])}+-{np.std(data[f"Diff_{freq}"])}')
+
+            # Save the data
+            data.to_csv(f'{sample_name}_TR_{curr:0.2f}.csv', index = False)
+
+        # Power down
+        self._turn_off()
 
 
 
