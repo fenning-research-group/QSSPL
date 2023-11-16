@@ -31,7 +31,7 @@ import time
 import re
 
 
-class SR830(Instrument):
+class SR850(Instrument):
 
     SAMPLE_FREQUENCIES = [
         62.5e-3, 125e-3, 250e-3, 500e-3, 1, 2, 4, 8, 16,

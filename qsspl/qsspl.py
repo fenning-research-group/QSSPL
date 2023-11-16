@@ -16,19 +16,19 @@ except ImportError:
     raise ImportError("Failed to import LDC502 from PLQY.ldc502. Ensure the module is installed and accessible.")
 
 try:
-    from PLQY.sr830 import SR830
-except ImportError:
-    raise ImportError("Failed to import control3 from PLQY.sr830. Ensure the module is installed and accessible.")
-
-try:
     from PLQY.ell6_slider import FilterSlider
 except ImportError:
     raise ImportError("Failed to import FilterSlider from PLQY.ell6_slider. Ensure the module is installed and accessible.")
 
 try:
-    from QSSPL.FY2300 import fy2300
+    from QSSPL.sr850 import SR850
 except ImportError:
-    raise ImportError("Failed to import fy2300. Ensure the module is installed and accessible.")
+    raise ImportError("Failed to import sr850 from QSSPL.sr850. Ensure the module is installed and accessible.")
+
+try:
+    from QSSPL.fy2300 import fy2300
+except ImportError:
+    raise ImportError("Failed to import fy2300 from QSSPL.fy2300. Ensure the module is installed and accessible.")
 
 plus_minus = u"\u00B1"
 
@@ -60,7 +60,7 @@ class QSSPL:
 
        # Connect to the Lock-in
         try:
-            self.lia = SR830('GPIB0::8::INSTR')
+            self.lia = SR830('GPIB1::7::INSTR')
             print("Lock-in SR850 connected.")
         except Exception as e:
             print("Error while trying to connect to the SR850: ", e)
@@ -93,12 +93,18 @@ class QSSPL:
         return voltage, max_current
 
     # Method to configure the hardware
-    def _configure(self):
+    def _configure_ldc(self):
         ''' Method to configure the laser settings'''
         self.ldc.set_laserOn()
         self.ldc.set_tecOn()
         self.ldc.set_modulationOn()
         print("Laser, TEC, and modulation turned on.")
+
+    def _configure_fy(self):
+        self.fy.set_output_on(1)
+        self.fy.set_output_on(2)
+        self.fy.set_amplitude(2, 1) # when using fy2300
+        print("FY2300 channel 1 and 2 turned on, channel 2 amplitude set to 1 V")
 
     # Method to turn off the laser
     def _turn_off(self):
@@ -113,7 +119,7 @@ class QSSPL:
         return currents+295.5
 
     # Method to take QSSPL measurements- function dev in progress
-    def take_qsspl(self, sample_name = "sample", min_current = 300, max_current = 780, step = 20, time_constant = 0.1, waveform = "sine"):
+    def take_qsspl(self, sample_name = "sample", min_current = 300, max_current = 780, step = 20, waveform = "sine"):
         """ Method to take QSSPL measurements
 
         Args:
@@ -121,16 +127,14 @@ class QSSPL:
             min_current (int, optional): Minimum laser current (mA). Defaults to 320.
             max_current (int, optional): Maximum laser current (mA). Defaults to 780.
             step (int, optional): Step between current settings (mA). Defaults to 20.
-            time_constant (float, optional): Time constant for lock-in (s). Defaults to 0.1.
         """        
-        print('Begin scan')
 
         # Configure the hardware
-        self._configure()
-        self.fy.set_output_on(1)
-        self.fy.set_output_on(2)
-        self.fy.set_amplitude(2, 1) # when using fy2300
+        self._configure_ldc()
+        self._configure_fy()
 
+        print('Begin scan')
+        
         # change currents to logspace or linspace
         # currents = 294.3+np.logspace(np.log10(300-294.3), np.log10(750-294.3), 21)
         # currents = np.logspace(np.log10(min_current - self.turn_on, ))
@@ -144,9 +148,8 @@ class QSSPL:
             self.fy.set_amplitude(1, v_set) # when using fy2300
             self.ldc.set_laserCurrent(I_set)
             print(f'Current set to {I_set}')
-            self.lia.time_constant = time_constant
-            rest = self.lia.time_constant
-
+            rest = 0.1
+            
             # Sweep frequency and take measurements
             for freq in np.linspace(1e4, 8e4, 15):
                 #self.lia.frequency = freq # when using lock in
