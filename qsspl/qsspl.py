@@ -21,6 +21,11 @@ except ImportError:
     raise ImportError("Failed to import FilterSlider from PLQY.ell6_slider. Ensure the module is installed and accessible.")
 
 try:
+    from PLQY.stepper_control import Stepper
+except ImportError:
+    raise ImportError("Failed to import Stepper from PLQY.stepper_control. Ensure the module is installed and accessible.")
+
+try:
     from QSSPL.sr850 import SR830
 except ImportError:
     raise ImportError("Failed to import sr850 from QSSPL.sr850. Ensure the module is installed and accessible.")
@@ -83,6 +88,14 @@ class QSSPL:
             print("Error while trying to connect to the FY2300: ", e)
             print("Please ensure the FY2300 is connected and try again.")
             raise self.CustomError("FY2300 Connection Error")
+
+        try:
+            self.stepper = Stepper('COM23')
+            print("Stepper connected.")
+        except Exception as e:
+            print("Error while trying to connect to the Stepper: ", e)
+            print("Please ensure the Stepper is connected and try again.")
+            raise self.CustomError("Stepper Connection Error")           
         
     # Method to set the laser current modulation
     def _current_mod(self, max_current):
@@ -98,7 +111,9 @@ class QSSPL:
         self.ldc.set_laserOn()
         self.ldc.set_tecOn()
         self.ldc.set_modulationOn()
-        print("Laser, TEC, and modulation turned on.")
+        self.stepper.moveto(0)
+        print("Laser, TEC, and modulation turned on, sample moved to laser beam.")
+        sleep(1)
 
     def _configure_fy(self):
         self.fy.set_output_on(1)
@@ -122,7 +137,7 @@ class QSSPL:
         return currents
 
 
-    # Method to take QSSPL measurements- function dev in progress
+    # Method to take QSSPL measurements
     def take_qsspl(self, sample_name = "sample", min_current = 300, max_current = 780, waveform = "square", rest = 0.1):
         """ Method to take QSSPL measurements
 
@@ -134,18 +149,13 @@ class QSSPL:
             waveform (str, optional): Shape of waveform.  Defaults to "sine".
             rest(float, optional): Time delay between measurements (s).  Defaults to 0.1 s. 
         """        
-
         # Configure the hardware
         self._configure_ldc()
         self._configure_fy()
 
         print('Begin scan')
         
-        # change currents to logspace or linspace
-        # currents = 294.3+np.logspace(np.log10(300-294.3), np.log10(750-294.3), 21)
-        # currents = np.logspace(np.log10(min_current - self.turn_on, ))
         currents = self._generate_currents(min_current, max_current) # log space
-        # currents = np.arange(min_current, max_current+step, step) # lin space
 
         for curr in currents:
             data = pd.DataFrame()
@@ -193,14 +203,14 @@ class QSSPL:
 
             # Save the data
             data.to_csv(f'{sample_name}_TR_{curr:0.2f}.csv', index = False)
+            print("Data saved")
 
         # Power down
         self._turn_off()
 
 
 
-            # Method to test hardware
-    # Method to take QSSPL measurements- function dev in progress
+    # Method to test QSSPL measurements- for quick hardware testing
     def test_qsspl(self, sample_name = "test_1", min_current = 550, max_current = 650, waveform = "square", rest = 0.1):
         """ Method to take QSSPL measurements
 
@@ -217,7 +227,7 @@ class QSSPL:
         self._configure_ldc()
         self._configure_fy()
 
-        print('Begin test scan')
+        print('Begin test scan, testing quickrange')
         
 
         currents = [min_current, max_current] 
@@ -231,7 +241,7 @@ class QSSPL:
             print(f'Current set to {I_set}')
             
             # Sweep frequency and take measurements
-            for freq in np.linspace(1e4, 8e4, 15):
+            for freq in np.linspace(1e4, 8e4, 5):
                 #self.lia.frequency = freq # when using lock in
                 self.fy.set_waveform(1, waveform, freq) # when using fy2300
                 self.fy.set_waveform(2, "sine", freq) # when using fy2300
@@ -268,9 +278,11 @@ class QSSPL:
 
             # Save the data
             data.to_csv(f'{sample_name}_TR_{curr:0.2f}.csv', index = False)
+            print("Data saved")
 
         # Power down
         self._turn_off()
+
 
 
 
