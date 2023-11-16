@@ -6,7 +6,7 @@ import os
 from tqdm import tqdm
 from time import sleep
 
-# Version 1.8 - fygen updates
+# Version 1.9 - fygen updates
 
 # Import local modules for hardware control
 
@@ -47,6 +47,7 @@ class QSSPL:
             self.laser_current = self.ldc.get_laser_current()
             self.laser_temp = self.ldc.get_laser_temp()
             self.laser_wl = 532 #nm
+            self.turn_on = 295.5
             self.ldc.set_laserOn()
             self.ldc.set_tecOn()
             self.ldc.set_modulationOn()
@@ -86,7 +87,7 @@ class QSSPL:
     # Method to set the laser current modulation
     def _current_mod(self, max_current):
         ''' Method to modulate the current of the laser '''
-        turn_on = 295.5
+        turn_on = self.turn_on
         diff = max_current  - turn_on
         voltage = (2**-0.5)*(diff*0.05)/100
         return voltage, max_current
@@ -107,8 +108,12 @@ class QSSPL:
         self.ldc.set_modulationOff()
         print("Laser, TEC, and modulation turned off.")
 
+    def _generate_currents(self, start, stop, step):
+        currents = np.logspace(np.log10(start-self.turn_on), np.log10(stop-self.turn_on), 21)
+        return currents+295.5
+
     # Method to take QSSPL measurements- function dev in progress
-    def take_qsspl(self, sample_name = "sample", min_current = 320, max_current = 780, step = 20, time_constant = 0.1):
+    def take_qsspl(self, sample_name = "sample", min_current = 300, max_current = 780, step = 20, time_constant = 0.1, waveform = "sine"):
         """ Method to take QSSPL measurements
 
         Args:
@@ -122,15 +127,21 @@ class QSSPL:
 
         # Configure the hardware
         self._configure()
+        self.fy.set_output_on(1)
+        self.fy.set_output_on(2)
+        self.fy.set_amplitude(2, 1) # when using fy2300
 
         # change currents to logspace or linspace
         # currents = 294.3+np.logspace(np.log10(300-294.3), np.log10(750-294.3), 21)
-        currents = np.arange(min_current, max_current+step, step)
+        # currents = np.logspace(np.log10(min_current - self.turn_on, ))
+        currents = self._generate_currents(min_current, max_current, step) # log space
+        # currents = np.arange(min_current, max_current+step, step) # lin space
 
         for curr in currents:
             data = pd.DataFrame()
             v_set, I_set = self._current_mod(curr)
-            self.lia.sine_voltage = v_set
+            #self.lia.sine_voltage = v_set  # when using lock in
+            self.fy.set_amplitude(1, v_set) # when using fy2300
             self.ldc.set_laserCurrent(I_set)
             print(f'Current set to {I_set}')
             self.lia.time_constant = time_constant
@@ -138,7 +149,9 @@ class QSSPL:
 
             # Sweep frequency and take measurements
             for freq in np.linspace(1e4, 8e4, 15):
-                self.lia.frequency = freq
+                #self.lia.frequency = freq # when using lock in
+                self.fy.set_waveform(1, waveform, freq) # when using fy2300
+                self.fy.set_waveform(2, waveform, freq) # when using fy2300
 
                 # Measure PL signal
                 self.filter.right() # Longpass in - PL
