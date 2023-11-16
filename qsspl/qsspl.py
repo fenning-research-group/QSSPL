@@ -60,7 +60,7 @@ class QSSPL:
 
        # Connect to the Lock-in
         try:
-            self.lia = SR830('GPIB0::8::INSTR')
+            self.lia = SR830('GPIB1::7::INSTR')
             print("Lock-in SR850 connected.")
         except Exception as e:
             print("Error while trying to connect to the SR850: ", e)
@@ -113,7 +113,9 @@ class QSSPL:
         return currents+295.5
 
     # Method to take QSSPL measurements- function dev in progress
-    def take_qsspl(self, sample_name = "sample", min_current = 300, max_current = 780, step = 20, time_constant = 0.1, waveform = "sine"):
+    def take_qsspl(self, sample_name = "sample", min_current = 300, max_current = 780, step = 20, waveform = "sine"):
+    #def take_qsspl(self, sample_name = "sample", min_current = 300, max_current = 780, step = 20, time_constant = 0.1, waveform = "sine"):  
+
         """ Method to take QSSPL measurements
 
         Args:
@@ -144,9 +146,10 @@ class QSSPL:
             self.fy.set_amplitude(1, v_set) # when using fy2300
             self.ldc.set_laserCurrent(I_set)
             print(f'Current set to {I_set}')
-            self.lia.time_constant = time_constant
-            rest = self.lia.time_constant
-
+            #self.lia.time_constant = time_constant
+            #rest = self.lia.time_constant
+            rest = 0.1
+            
             # Sweep frequency and take measurements
             for freq in np.linspace(1e4, 8e4, 15):
                 #self.lia.frequency = freq # when using lock in
