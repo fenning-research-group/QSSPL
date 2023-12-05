@@ -98,6 +98,17 @@ class SR830(Instrument):
         time.sleep(self.POLLING_DELAY)
         return float(theta)
 
+
+    def auto_gain(self):
+        self.write("AGAN")
+        #time.sleep(2) #added this Henrya
+
+    def auto_reserve(self):
+        self.write("ARSV")
+
+    def auto_phase(self):
+        self.write("APHS")
+
     channel1 = Instrument.control(
         "DDEF?1;", "DDEF1,%d,0",
         """ A string property that represents the type of Channel 1,
@@ -287,15 +298,7 @@ class SR830(Instrument):
             **kwargs
         )
 
-    def auto_gain(self):
-        self.write("AGAN")
-        time.sleep(0.5) #added this Henrya
 
-    def auto_reserve(self):
-        self.write("ARSV")
-
-    def auto_phase(self):
-        self.write("APHS")
 
     def auto_offset(self, channel):
         """ Offsets the channel (X, Y, or R) to zero """

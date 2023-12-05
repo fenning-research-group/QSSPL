@@ -80,7 +80,8 @@ class QSSPL:
             print("Error while trying to connect to the Filter Slider: ", e)
             print("Please ensure the Filter Slider is connected and try again.")
             raise self.CustomError("Filter Slider Connection Error")    
-        
+
+        # Connect to the FY2300
         try: 
             self.fy = fy2300("COM5")
             print("FY2300 connected.")
@@ -89,6 +90,7 @@ class QSSPL:
             print("Please ensure the FY2300 is connected and try again.")
             raise self.CustomError("FY2300 Connection Error")
 
+        # Connect to the stepper motor
         try:
             self.stepper = Stepper('COM23')
             print("Stepper connected.")
@@ -143,10 +145,10 @@ class QSSPL:
 
         Args:
             sample_name (str, optional): Name of sample. Defaults to "sample".
-            min_current (int, optional): Minimum laser current (mA). Defaults to 320.
+            min_current (int, optional): Minimum laser current (mA). Defaults to 300.
             max_current (int, optional): Maximum laser current (mA). Defaults to 780.
             step (int, optional): Step between current settings (mA). Defaults to 20.
-            waveform (str, optional): Shape of waveform.  Defaults to "sine".
+            waveform (str, optional): Shape of waveform.  Defaults to "square".
             rest(float, optional): Time delay between measurements (s).  Defaults to 0.1 s. 
         """        
         # Configure the hardware
